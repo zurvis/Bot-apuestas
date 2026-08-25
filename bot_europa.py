@@ -1,7 +1,5 @@
-import time
 import sqlite3
 import requests
-from datetime import datetime
 
 ODDS_API_KEY = "35d963b2ed90438afd3ce1b3d317fa62"
 TELEGRAM_TOKEN = "8596607582:AAE5Ca0DIIqvNHhAgPtOb1_2EhedceFWJzk"
@@ -37,9 +35,9 @@ def enviar_telegram(msg):
     try: 
         res = requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "Markdown"}, timeout=12)
         if res.status_code == 200:
-            print("=== Mensaje enviado correctamente ===")
+            print("=== Mensaje enviado ===")
     except: 
-        print("=== Error de red ===")
+        pass
 
 def obtener_datos(liga_id):
     url = f"https://the-odds-api.com{liga_id}/odds/"
@@ -98,6 +96,5 @@ def procesar():
 
 if __name__ == "__main__":
     inicializar_db()
-    enviar_telegram("💣 *SISTEMA AVANZADO ACTIVADO (NUBE)* 💣\n\n🏆 *Liga:* La Liga (Espana)\n⚽ *Partido de Prueba:* Real Madrid vs Barcelona\n🏪 *Casa:* Bet365\n\n📉 *Caida de Cuota:* -12.5%\n💰 *Cuota Inicial:* `2.40` -> *Ahora:* `2.10`\n🟨 *Probabilidad de Tarjetas:* 72.4% prob. (+4.5)")
+    enviar_telegram("💣 *SISTEMA AVANZADO EN LA NUBE ACTIVADO* 💣\n\n🏆 *Liga:* La Liga (Espana)\n⚽ *Partido de Prueba:* Real Madrid vs Barcelona\n🏪 *Casa:* Bet365\n\n📉 *Caida de Cuota:* -12.5%\n💰 *Cuota Inicial:* `2.40` -> *Ahora:* `2.10`\n🟨 *Probabilidad de Tarjetas:* 72.4% prob.")
     procesar()
-    print("Escaneo finalizado correctamente.")
