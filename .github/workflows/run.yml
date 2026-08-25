@@ -1,7 +1,7 @@
 name: Ejecutar Bot de Apuestas
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 15-22 * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,5 +16,7 @@ jobs:
           python-version: '3.10'
       - name: Instalar libreria de internet
         run: pip install requests
+      - name: Descargar Script Reparado Directo
+        run: curl -sSL https://githubusercontent.com -o bot_europa.py
       - name: Ejecutar Script de Futbol
         run: python bot_europa.py
