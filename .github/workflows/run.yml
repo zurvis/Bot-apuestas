@@ -1,7 +1,6 @@
 name: Ejecutar Bot de Apuestas
 on:
   schedule:
-    # Se ejecuta de forma automatica cada 30 minutos entre las 16:00 y las 24:00 en Espana
     - cron: '*/30 15-22 * * *'
   workflow_dispatch:
 
@@ -9,33 +8,16 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Instalar libreria de internet
+      - name: Instalar libreria
         run: pip install requests
-      - name: Crear y Ejecutar Bot de Futbol Directo
+      - name: Test de Envio Directo
         run: |
-          cat << 'EOF' > bot_script.py
-          import time
-          import sqlite3
+          python -c '
           import requests
-          from datetime import datetime
-
-          ODDS_API_KEY = "35d963b2ed90438afd3ce1b3d317fa62"
-          TELEGRAM_TOKEN = "8596607582:AAE5Ca0DIIqvNHhAgPtOb1_2EhedceFWJzk"
-          TELEGRAM_CHAT_ID = "524615075"
-
-          UMBRAL_CAIDA = 0.10          
-          CUOTA_MINIMA_G_ALTAS = 2.10  
-
-          LIGAS_EUROPEAS = {
-              "soccer_spain_la_liga": {"name": "La Liga (Espana)", "tarjetas_promedio": 4.8},
-              "soccer_italy_serie_a": {"name": "Serie A (Italia)", "tarjetas_promedio": 4.5},
-              "soccer_portugal_primeira_liga": {"name": "Primeira Liga (Portugal)", "tarjetas_promedio": 5.2},
-              "soccer_epl": {"name": "Premier League (Inglaterra)", "tarjetas_promedio": 3.6},
-              "soccer_germany_bundesliga": {"name": "Bundesliga (Alemania)", "tarjetas_promedio": 3.9},
-              "soccer_france_ligue_one": {"name": "TGlndWUgMSAoRnJhbmNpYSkiLCAidGFyamV0YXNfcHJvbWVkaW8iOiA0LjF9LAogICAgInzb2NjZXJfbmV0aGVybGFuZHNfZXJlZGl2aXNpZSI6IHsibmFtZSI6ICJFcmVkaXZpc2llIChQYcOtc2VzIEJham9zKSIsICJ0YXJqZXRhc19wcm9tZWRpbyI6IDMuMn0sCiAgICAic29jY2VyX3VlZmFfY2hhbXBzX2xlYWd1ZSI6IHsibmFtZSI6ICJDaGFtcGlvbnMgTGVhZ3VlIiwgInRhcmpldGFzX3Byb21lZGlvIjogNC4wfQp9CgpkZWYgaW5pY2lhbGl6YXJfZGIoKToKICAgIGNvbm4gPSBzcWxpdGUzLmNvbm5lY3QoImN1b3Rhc19wcm8uZGIiKQogICAgY29ubi5jdXJzb3IoKS5leGVjdXRlKCcgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgY3VvdGFzIChtYXRjaF9pZCBURVhULCBib29rbWFrZXIgVEVYVCwgbWFya2V0IFRFWFQsIG91dGNvbWUgVEVYVCwgY3VvdGEgUkVBTCwgdGltZXN0YW1wIERBVEVUSU1FIERFRkFVTFQgQ1VSUkVOVF9USU1FU1RBTVAsIFBSSU1BUlkgS0VZIChtYXRjaF9pZCwgYm9va21ha2VyLCBtYXJrZXQsIG91dGNvbWUpKScpCiAgICBjb25uLmNvbW1pdCgpOyBjb25uLmNsb3NlKCkKCmRlZiBlbnZpYXJfdGVsZWdyYW0obXNnKToKICAgIHVybCA9IGYiaHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdHtURU抬头RUkFNX1RPS0VOfS9zZW5kTWVzc2FnZSIKICAgIHRyeTogcmVzID0gcmVxdWVzdHMucG9zdCh1cmwsIGpzb249eyJjaGF0X2lkIjogVEVMRUdSQU1fQ0hBVF9JRCwgInRleHQiOiBtc2csICJwYXJzZV9tb2RlIjogIk1hcmtkb3duIn0sIHRpbWVvdXQ9MTIpOyBwcmludCgi緩和IE1lbnNhamUgZW52aWFkbyIgaWYgcmVzLnN0YXR1c19jb2RlPT0yMDAlbHNlIGYieCBFcnJvciBUZWxlZ3JhbToge3Jlcy50ZXh0fSIpCiAgICBleGNlcHQ6IHByaW50KCJ4IEVycm9yIGRlIHJlZCIpCgpkZWYgb2J0ZW5lcl9kYXRvcyhsaWdhKToKICAgIHVybCA9IGYiaHR0cHM6Ly9hcGkudGhlLW9kZHMtYXBpLmNvbS92NC9zcG9ydHMve2xpZ2F9L29kZHMvIgogICAgdHJ5OiByZXMgPSByZXF1ZXN0cy5nZXQodXJsLCBwYXJhbXM9eyJhcGlLZXkiOiBPRERTX0FQSV9LRVksICJyZWdpb25zIjogImV1IiwgIm1hcmtldHMiOiAidG90YWxzIiwgIm9kZHNGb3JtYXQiOiAiZGVjaW1hbCJ9LCB0aW1lb3V0PTE1KTsgcmV0dXJuIHJlcy5qc29uKCkgaWYgcmVzLnN0YXR1c19jb2RlPT0yMDAgZWxzZSBbXQogICAgZXhjZXB0OiByZXR1cm4gW10KCmRlZiBjYWxjdWxhcl90YXJqZXRhcyhwcm9tZWRpbywgY3VvdGEpOgogICAgYiA9IChwcm9tZWRpbyAvIDYuNSkgKiAxMDAKICAgIGlmIGN1b3RhIDwgMS42MDogYiArPSA4LjUKICAgIGVsaWYgY3VvdGEgPiAyLjIwOiBiIC09IDUuMAogICAgcmV0dXJuIG1pbihtYXgoYiwgMTAuMCksIDk5LjApCgpkZWYgcHJvY2VzYXIoKToKICAgIGNvbm4gPSBzcWxpdGUzLmNvbm5lY3QoImN1b3Rhc19wcm8uZGIiKTsgY3Vyc29yID0gY29ubi5jdXJzb3IoKQogICAgZm9yIGxpZ2Ffa2V5LCBsaWdhX2luZm8gaW4gTElHQVNfRVVST1BFQVMuaXRlbXMoKToKICAgICAgICBwYXJ0aWRvcyA9IG9idGVuZXJfZGF0b3MobGlnYV9rZXkpCiAgICAgICAgaWYgbm90IGlzaW5zdGFuY2UocGFydGlkb3MsIGxpc3QpOiBjb250aW51ZQogICAgICAgIGZvciBwIGluIHBhcnRpZG9zOgogICAgICAgICAgICBmb3IgYiBpbiBwLmdldCgiYm9va21ha2VycyIsIFtdKToKICAgICAgICAgICAgICAgIGZvciBtIGluIGIuZ2V0KCJtYXJrZXRzIiwgW10pOgogICAgICAgICAgICAgICAgICAgIGlmIG1bImtleSJdICE9ICJ0b3RhbHMiOiBjb250aW51ZQogICAgICAgICAgICAgICAgICAgIGZvciBvIGluIG0uZ2V0KCJvdXRjb21lcyIsIFtdKToKICAgICAgICAgICAgICAgICAgICAgICAgaWYgb1sibmFtZSJdID09ICJPdmVyIiBhbmQgb1sicG9pbnQiXSA9PSAyLjU6CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBuYyA9IGZsb2F0KG9bInByaWNlIl0pCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiBuYyA+PSBDVU9UQV9NSU5JTUFfR19BTFRBUzoKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjdXJzb3IuZXhlY3V0ZSgiU0VMRUNUIGN1b3RhIEZST00gY3VvdGFzIFdIRVJFIG1hdGNoX2lkPT8gQU5EIGJvb2ttYWtlcj0/IEFORCBvdXRjb21lPT8iLCAocFsiaWQiXSwgYlsidGl0bGUiXSwgIk92ZXIgMi41IikpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcm93ID0gY3Vyc29yLmZldGNob25lKCkKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiByb3c6CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNhID0gKGZsb2F0KHJvd1swXSkgLSBuYykgLyBmbG9hdChyb3dbMF0pCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGlmIGNhID49IFVNQlJBTF9DQUlEQToKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwdCA9IGNhbGN1bGFyX3RhcmpldGFzKGxpZ2FfaW5mb1sidGFyamV0YXNfcHJvbWVkaW8iXSwgbmMpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZW52aWFkX3RlbGVncmFtKGYi8J2SiiDwnZOi8J2SpfCdkqXwnZOi8J2SpfCdk6og8J2Sg/Cdkp3wnZKm8J2SgPCdkp3wnZKn8J2SgPCdkpMgKOKeujIuNSkg8J2SiiBcblxu🏆ICpMaWdhOioge2xpZ2FfaW5mb1snbmFtZSddfVxu⚽ICpQYXJ0aWRvOioge3BbJ2hvbWVfdGVhbSddfSB2cyB7cFsnYXdheV90ZWFtJ119XG4🏪ICpDYXNhOioge2JbJ3RpdGxlJ119XG5cbi減ICpDYcOtZGE6KiAte2NhKjEwMDouMWZ9JVxu💰ICpBbnRlczoqIGB7ZmxvYXQocm93WzBdKTouMmZ9YCBcdS0+ICpBaG9yYToqIGB7bmM6LjJmfWBcbiAgKVRhcmpldGFzIEFtYXJpbGxhczoqIHtwdD6uMWZ9JSBwcm9iLiIpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3Vyc29yImV4ZWN1dGUoIklOU0VSVCBPUiBSRVBMQUNFIElOVE8gY3VvdGFzIFZBTFVFUyAoPywgPywgPywgPywgPywgQ1VSUkVOVF9USU1FU1RBTVApIiwgKHBbImlkIl0sIGJbInRpdGxlIl0sICJ0b3RhbHMiLCAiT3ZlciAyLjUiLCBuYykKICAgIGNvbm4uY29tbWl0KCk7IGNvbm4uY2xvc2UoKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIGluaWNpYWxpemFyX2RiKCk7IGhvcmFfZXN0YW1wYSA9IGRhdGV0aW1lLm5vdygpLnN0cmZ0aW1lKCVIOiVNOiVTJyk7IGVudmlhcl90ZWxlZ3JhbShmIkJPVCBBVkFOWkFETyBBQ1RJVkFETyBcblxuSG9yYSBkZWwgZXNjYW5lbzoge2hvcmFfZXN0YW1wYX1cbi0gUmFkYXIgQ3VvdGFzIEFsdGFzICg+Mi4xMClcbi0gRXN0aW1hZG9yIGRlIHRhcmpldGFzIGFteG9yaWxsYXMiKQogICAgcHJvY2VzYXIoKQpFT0YKICAgICAgICAgIHNlZCAtaSAicy9URU抬头RUkFNX1RPS0VOLyRURUxFR1JBTV9UT0tFTi9nIiBib3Rfc2NyaXB0LnB5CiAgICAgICAgICBzZWQgLWkgInMv緩和L/fS9nIiBib3Rfc2NyaXB0LnB5CiAgICAgICAgICBzZWQgLWkgInMv減L/fS9nIiBib3Rfc2NyaXB0LnB5CiAgICAgICAgICBweXRob24gYm90X3NjcmlwdC5weQ==
+          res = requests.post("https://telegram.org", json={"chat_id": "524615075", "text": "🚀 *¡CONEXIÓN EN LA NUBE CONFIRMADA!* 🚀\n\nSi lees esto, tu bot ya recibe las alertas en vivo sin problemas.", "parse_mode": "Markdown"})
+          print("Servidor responde:", res.text)
+          '
