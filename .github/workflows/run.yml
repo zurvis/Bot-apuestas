@@ -1,6 +1,7 @@
 name: Ejecutar Bot de Apuestas
 on:
   schedule:
+    # Se ejecuta de forma automatica cada 30 minutos entre las 16:00 y las 24:00 en Espana
     - cron: '*/30 15-22 * * *'
   workflow_dispatch:
 
@@ -8,16 +9,92 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - name: Instalar libreria
+      - name: Instalar libreria de internet
         run: pip install requests
-      - name: Test de Envio Directo
+      - name: Crear y Ejecutar Bot de Futbol Directo
         run: |
-          python -c '
+          cat << 'EOF' > bot_script.py
+          import time
+          import sqlite3
           import requests
-          res = requests.post("https://telegram.org", json={"chat_id": "524615075", "text": "🚀 *¡CONEXIÓN EN LA NUBE CONFIRMADA!* 🚀\n\nSi lees esto, tu bot ya recibe las alertas en vivo sin problemas.", "parse_mode": "Markdown"})
-          print("Servidor responde:", res.text)
-          '
+          from datetime import datetime
+
+          ODDS_API_KEY = "35d963b2ed90438afd3ce1b3d317fa62"
+          TELEGRAM_TOKEN = "8962566023:AAGkUe4TBfhsf8qv6wxfaSi61AnxS0DEb2c"
+          TELEGRAM_CHAT_ID = "524615075"
+
+          UMBRAL_CAIDA = 0.10          
+          CUOTA_MINIMA_G_ALTAS = 2.10  
+
+          LIGAS_EUROPEAS = {
+              "soccer_spain_la_liga": {"name": "La Liga (Espana)", "tarjetas_promedio": 4.8},
+              "soccer_italy_serie_a": {"name": "Serie A (Italia)", "tarjetas_promedio": 4.5},
+              "soccer_portugal_primeira_liga": {"name": "Primeira Liga (Portugal)", "tarjetas_promedio": 5.2},
+              "soccer_epl": {"name": "Premier League (Inglaterra)", "tarjetas_promedio": 3.6},
+              "soccer_germany_bundesliga": {"name": "Bundesliga (Alemania)", "tarjetas_promedio": 3.9},
+              "soccer_france_ligue_one": {"name": "Ligue 1 (Francia)", "tarjetas_promedio": 4.1},
+              "soccer_netherlands_eredivisie": {"name": "Eredivisie (Paises Bajos)", "tarjetas_promedio": 3.2},
+              "soccer_uefa_champs_league": {"name": "Champions League", "tarjetas_promedio": 4.0}
+          }
+
+          def inicializar_db():
+              conn = sqlite3.connect("cuotas_pro.db")
+              conn.cursor().execute('CREATE TABLE IF NOT EXISTS cuotas (match_id TEXT, bookmaker TEXT, market TEXT, outcome TEXT, cuota REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (match_id, bookmaker, market, outcome))')
+              conn.commit(); conn.close()
+
+          def enviar_telegram(msg):
+              url = f"https://telegram.org{TELEGRAM_TOKEN}/sendMessage"
+              try: 
+                  res = requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "Markdown"}, timeout=12)
+                  if res.status_code == 200: print("=== Mensaje enviado ===")
+              except: pass
+
+          def obtener_datos(liga_id):
+              url = f"https://the-odds-api.com{liga_id}/odds/"
+              params = {"apiKey": ODDS_API_KEY, "regions": "eu", "markets": "totals", "oddsFormat": "decimal"}
+              try:
+                  res = requests.get(url, params=params, timeout=15)
+                  return res.json() if res.status_code == 200 else []
+              except: return []
+
+          def calcular_tarjetas(promedio_liga, cuota):
+              b = (promedio_liga / 6.5) * 100
+              if cuota < 1.60: b += 8.5
+              elif cuota > 2.20: b -= 5.0
+              return min(max(b, 10.0), 99.0)
+
+          def procesar():
+              conn = sqlite3.connect("cuotas_pro.db"); cursor = conn.cursor()
+              for liga_key, liga_info in LIGAS_EUROPEAS.items():
+                  partidos = obtener_datos(liga_key)
+                  if not isinstance(partidos, list): continue
+                  for p in partidos:
+                      for b in p.get("bookmakers", []):
+                          for m in b.get("markets", []):
+                              if m["key"] != "totals": continue
+                              for o in m.get("outcomes", []):
+                                  if o.get("name") == "Over" and o.get("point") == 2.5:
+                                      nc = float(o["price"])
+                                      if nc >= CUOTA_MINIMA_G_ALTAS:
+                                          cursor.execute("SELECT cuota FROM cuotas WHERE match_id=? AND bookmaker=? AND outcome=?", (p["id"], b["title"], "Over 2.5"))
+                                          row = cursor.fetchone()
+                                          if row:
+                                              caida = (float(row) - nc) / float(row)
+                                              if caida >= UMBRAL_CAIDA:
+                                                  pt = calcular_tarjetas(liga_info["tarjetas_promedio"], nc)
+                                                  enviar_telegram(f"💣 *ALERTA: VALOR +2.5 GOLES* 💣\n\n🏆 *Liga:* {liga_info['name']}\n⚽ {p['home_team']} vs {p['away_team']}\n🏪 *Casa:* {b['title']}\n\n📉 *Caida:* -{caida*100:.1f}%\n💰 *Antes:* `{float(row):.2f}` -> *Ahora:* `{nc:.2f}`\n🟨 *Tarjetas:* {pt:.1f}% prob.")
+                                          cursor.execute("INSERT OR REPLACE INTO cuotas VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)", (p["id"], b["title"], "totals", "Over 2.5", nc))
+              conn.commit(); conn.close()
+
+          if __name__ == "__main__":
+              inicializar_db()
+              enviar_telegram("💣 *SISTEMA AVANZADO ACTIVADO (NUBE)* 💣\n\nTu bot nuevo ya esta conectado a GitHub.\n\n🏆 *Liga:* La Liga (Espana)\n⚽ *Partido de Prueba:* Real Madrid vs Barcelona\n🏪 *Casa:* Bet365\n\n📉 *Caida de Cuota:* -12.5%\n💰 *Cuota Inicial:* `2.40` -> *Ahora:* `2.10`\n🟨 *Probabilidad de Tarjetas:* 72.4% prob.")
+              procesar()
+          EOF
+          python bot_script.py
